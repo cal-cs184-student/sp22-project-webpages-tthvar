@@ -1,7 +1,164 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <style>
+    body {
+      padding: 100px;
+      width: 1000px;
+      margin: auto;
+      text-align: left;
+      font-weight: 300;
+      font-family: 'Open Sans', sans-serif;
+      color: #121212;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      font-family: 'Source Sans Pro', sans-serif;
+    }
+  </style>  <title>CS 184 Mesh Editor</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+  <h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2020</h1>
+  <h1 align="middle">Project 2: Mesh Editor</h1>
+  <h2 align="middle">Tejas Thvar & Howard Wang, CS184</h2>
+
+  <br><br>
+
+  <div>
+
+    <h2 align="middle">Overview</h2>
+    <p>In this project, we built Bezier curves/surfaces using the de Casteljau algorithm. We also learned an interface for triangle meshing, and developed functionality to edit the triangular meshes through half-edge operations. We also implemented an upsampling feature using the loop subdivision algorithm.</p>
+
+    <h2 align="middle">Section I: Bezier Curves and Surfaces</h2>
+
+    <h3 align="middle">Part 1: Bezier curves with 1D de Casteljau subdivision</h3>
+    <p> De Casteljau's algorithm is a method of drawing bezier curves, a method of modelling smooth curves with point inputs. It works as following 1) Take 3 points (2 edges) 2) Insert a point on each edge using linear interpolation 3) Repeat Recursively [step is pi' = lerp(pi, pi+1, t) = (1 - t)pi + tpi+1. It is a recursive method of linear interpolation to estimate a smooth curve from given points.  Below are examples of our own 6 control point Bezier curve on differing levels of the evaluation as well as a Bezier curve with modified t & moved control points. </p>
+
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="images/task1/1.png" align="middle" width="300px" />
+            <figcaption align="middle">Level 1.</figcaption>
+          </td>
+          <td>
+            <img src="images/task1/2.png" align="middle" width="300px" />
+            <figcaption align="middle">Level 2.</figcaption>
+          </td>
+          <td>
+            <img src="images/task1/3.png" align="middle" width="300px" />
+            <figcaption align="middle">Level 3.</figcaption>
+          </td>
+        </tr>
+        <br>
+        <tr>
+          <td>
+            <img src="images/task1/5.png" align="middle" width="400px" />
+            <figcaption align="middle"> Modified control points/t.</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+
+    <h3 align="middle">Part 2: Bezier surfaces with separable 1D de Casteljau subdivision</h3>
+    <p> The de Casteljau algorithm extends directly to Bezier surfaces. Due to surfaces being defined by 3D points, it is necessary to use a helper function to compute the recursive step on each 1D level/row of the points. As a result, we are left with the interpolated smooth curve. Below is shown a screenshot of our implementation's teapot rendering. </p>
+    <img src = "images/task2/1.png" align = "middle" width = "400px"/>
+
+
+
+    <h2 align="middle">Section II: Sampling</h2>
+
+    <h3 align="middle">Part 3: Average normals for half-edge meshes</h3>
+    <p> In order to perform Phong shading, an effective method of shading smooth surfaces, we need to compute area-weighted normal vectors. This was implemented by iterating through the faces incident to the given vertex, computing its unit normal vector by taking the cross product of its two vertices. Once we had unit normal vectors computed, we weighted them by the triangle/face's area and summed them to compute the area-weighted normal. Below are screenshots of the teapot comparing shading with and without vertex normals. </p>
+    <img src = "images/task3/1.png" align = "middle" width = "400px"/>
+    <figcaption align = "middle">Shading with Vertex Normals</figcaption>
+    <img src = "images/task3/2.png" align = "middle" width = "400px"/>
+    <figcaption align = "middle">Shading without Vertex Normals</figcaption>
+
+    <h3 align="middle">Part 4: Half-edge flip</h3>
+    <p> The edge flip is a local remeshing operation computed on an edge, using the below diagram. This was computed by modifying the halfedge pointers for each vertex, edge, and face, as well as setting the next, twin, vertex, edge, and face pointers correctly for every half-edge using the setNeighbors function. We found using a diagram mapping each edge after the flip to help develop this feature. </p>
+    <img src = "images/task4/1.png" align = "middle" width = "400px"/>
+    <figcaption align = "middle">Teapot before edge flips. </figcaption>
+    <img src = "images/task4/2.png" align = "middle" width = "400px"/>
+    <figcaption align = "middle">Teapot after edge flips. </figcaption>
+
+    <h3 align="middle">Part 5: Half-edge split</h3>
+    <p> The edge split is another local remeshing operation using the below diagram. The edge split implementation consisted of two parts - adding new mesh elements (new vertex, two new triangles, three new edges, 6 new faces) and reassigning pointers similar to the half-edge flip. Once again, using a diagram to visualize the operation helped tremendously in development and our debugging journey. Below are screenshots of a mesh before and after some edge splits, and the mesh before and after a combination of both edge splits and flips. </p>
+    <img src = "images/split.png" align = "middle" width = "400px"/>
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="images/task5/1.png" align="middle" width="400px" />
+            <figcaption align="middle">Before Edge Flips.</figcaption>
+          </td>
+          <td>
+            <img src="images/task5/2.png" align="middle" width="400px" />
+            <figcaption align="middle">After Edge Flips.</figcaption>
+          </td>
+        </tr>
+        <br>
+        <tr>
+          <td>
+            <img src="images/task5/1.png" align="middle" width="400px" />
+            <figcaption align="middle">Before Edge Flips/Splits.</figcaption>
+          </td>
+          <td>
+            <img src="images/task5/3.png" align="middle" width="400px" />
+            <figcaption align="middle">After Edge Flips/Splits.</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+
+    <h3 align="middle">Part 6: Loop subdivision for mesh upsampling</h3>
+    <p> We implemented loop subdivision by using the 5 step given upsampling routine. 1) We computed the new positions for vertices in the input mesh using the loop subdivision rule (as detailled in the diagram below) and marked them for being an original vertex in the mesh. 2) We computed the updated vertex positions associated with edges after the split, and store them in the newPosition field. 3) We split every edge in the original mesh. 4) We flipped any new edge connecting a old + new vertex. 5) We copied the new vertex positions after the split into their position fields. </p>
+    <p> Below are some screenshots of mesh behavior after loop subdivision. It seems that sharp corners and edges are rounder and smoother. If we pre-split some edges, we get a flattened area where we did the split, reducing smoothness. </p>
+    <p> 
+
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="images/task6/1.png" align="middle" width="300px" />
+            <figcaption align="middle">First Upsample.</figcaption>
+          </td>
+          <td>
+            <img src="images/task6/2.png" align="middle" width="300px" />
+            <figcaption align="middle">Second Upsample.</figcaption>
+          </td>
+          <td>
+            <img src="images/task6/3.png" align="middle" width="300px" />
+            <figcaption align="middle">Third Upsample.</figcaption>
+          </td>
+        </tr>
+        <br>
+        <tr>
+          <td>
+            <img src="images/task6/4.png" align="middle" width="400px" />
+            <figcaption align="middle">First Upsample after splitting edge. </figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+
+    <h2 align="middle">Section III: Optional Extra Credit</h2>
+    <p>If you are not participating in the optional mesh competition, don't worry about this section!</p>
+
+    <h3 align="middle">Part 7: Design your own mesh!</h3>
+
+</body>
+
 </html>
