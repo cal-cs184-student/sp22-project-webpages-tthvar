@@ -1,7 +1,133 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-1 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>  
+    div.padded {  
+      padding-top: 0px;  
+      padding-right: 100px;  
+      padding-bottom: 0.25in;  
+      padding-left: 100px;  
+    }  
+  </style> 
+<title>Tejas Thvar, Howard Wang  |  CS 184</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+</head>
+<body>
+<br />
+<h1 align="middle">Assignment 3: PathTracer</h1>
+    <h2 align="middle">Howard Wang, Tejas Thvar</h2>
+
+    <h2 align="middle">Part 1: Ray Generation and Intersection</h2>
+        <h3 align = "left"> Ray Generation </h3>
+        For our implementation of ray generation, we computed the position of the input sensor sample coordinate by applying a transformation from the image space to  camera space. This was done through computing the transformation from image space to camera space using the given diagram/formula (x_sensor = (x_img - 0.5) * 2 * tan(0.5*hFov), y_sens = (y_img - 0.5) * 2 * tan(0.5*vFov)) by looking at the graphical representation of the ray, also utilizing the fact that the image coordinates are already normalized. From there, we transform the camera space coordinates into world coordinates by using the c2w matrix given. We then normalized the world coordinates to compute a ray from the origin to the world coordinates, also setting the min_t and max_t fields to nClip and fClip respectively to ensure clipping planes are used properly. 
+        <img src = "./images/p1/p1_t1_trans.png" style="width:700px;height:300px;"></img>
+        <h3 align = "left"> Triangle Intersection Algorithm </h3>
+        The triangle intersection algorithm was computed using the Moller Trumbore algorithm. Generally speaking, the ray triangle intersection is computed by intersecting the ray equation (o + td) and the plane equation [ (p - p’) . N = 0 ]. Moller Trumbore is an optimized version of solving for this intersection, using the below matrix-level representation. Some important aspects to note for this optimization are ensuring that the homogeneous coordinates are valid (i.e. between 0 and 1), ensuring that the computed vector is normalized, and setting the intersection object properly using the isect parameter. 
+        <img src = "./images/p1/p1_t1_mt.jpg" style="width:600px;height:450px;"></img>
+        <h3 align = "left"> Normal Shading Results for small .dae </h3>
+        <img src = "./images/p1/p1_img1.png" style="width:600px;height:450px;"></img>
+        <img src = "./images/p1/p1_img2.png" style="width:600px;height:450px;"></img>
+        <img src = "./images/p1/p1_img3.png" style="width:600px;height:450px;"></img>
+
+    <h2 align="middle">Part 2: Bounding Volume Hierarchy </h2>
+        <h3 align = "left"> BVH Construction Algorithm </h3>
+        <p>Our BVH Construction algorithm aims to divide up the primitives (triangle objects) into a tree structure that we can use to speed up ray intersection tests from O(n) to O(log n). The algorithm works recursively, each time on a subset of the primitive objects. First, we iterate through the vector of objects to create a bounding box that encompasses all of them. We create a node to represent this bounding box. If the number of primitives in this node is less than the max leaf size, we determine this node to be a leaf and end recursion. 
+            Otherwise, we will split the node into a left and right side. We check which axis is longest, then we split that axis by the average of the centroids of the bounding boxes of the primitives. We run partition on the vector of primitives according to this rule, splitting it into the left and right nodes. However, if there somehow ends up with 0 primitives on either side, we determine the current node to be unpartitionable by setting it as a leaf node and ending recursion. Otherwise, we recursively call construct_bvh() on the left and right sides, each creating new nodes to develop the tree. Once each node is divided until it is leaf size, the tree has been built.</p>
+
+        <h3 align = "left"> Large .dae results with BVH acceleration </h3>
+        <img src = "./images/p2/cblucy.jpeg" style="width:600px;height:450px;"></img>
+        <img src = "./images/p2/cbdragon.png" style="width:600px;height:450px;"></img>
+        <img src = "./images/p2/cbcoil.png" style="width:600px;height:450px;"></img>
+        <h3 align = "left"> BVH Acceleration Rendering Time Analysis </h3>
+        <p> For the medium-sized .dae files beast.dae and maxplanck.dae, renderings were computed with and without BVH acceleration. First off, renderings of both .dae files are included below. For Max Planck, when run without BVH acceleration, rendering took 149.6 seconds. When run with BVH acceleration, rendering took 0.1517 seconds. For the Beast, when rendered without BVH acceleration, it took 153.8 seconds. When rendered with BVH acceleration, results took 0.098 seconds. These experimental results demonstrate the rapid speed up attained by using BVH acceleration. </p>
+        <img src = "./images/p2/maxplanck.jpeg" style="width:600px;height:450px;"></img>
+        <img src = "./images/p2/beast.jpeg" style="width:600px;height:450px;"></img>
+
+    <h2 align="middle">Part 3: Direct Illumination </h2>
+        <h3 align = "left"> Direct Lighting through Uniform Hemisphere Sampling </h3>
+        <p> The first method of direct lighting estimation we implemented was by uniform hemisphere sampling. As illustrated in the spec, we implement this by tracing the inverse rays (light reflected back towards camera) using the rendering equation. We approximate the rendering equation/integral of all light arriving in the hemisphere around the intersection point using the Monte Carlo Estimator, as shown in the image below. With respect to our implementation, for num_samples iterations we computed a sample using the hemisphereSampler, computed the direction of this sample (transforming to world space using the o2w matrix), and constructed a ray from the origin (hit_p) to the computed direction point. It was also critical to set the min_t field of the ray to EPS_F to avoid numerical precision issues. From there, we checked whether the sampled ray intersected with the constructed BVH, and if so added the product of f(), emission(), and cos_theta(wj) to our reflected light sum as according the Monte Carlo equation. After iterating through num_samples times, we divide the L_out computed by the number of samples and multiply by 2*PI to account for the probability term of the Monte Carlo equation (1/2pi probability of picking sample from hemisphere). </p>
+        <img src = "./images/p3/mc_eq.png" style="width:200px;height:50px;"></img>
+
+        <h3 align = "left"> Direct Lighting through Importance Sampling </h3>
+        <p> Due to the noise present in renders using uniform hemisphere sampling, we implemented direct lighting using importance sampling. Our implementation first iterated over each light in the scene, sampling directions between the light source and the point of interest, once again hit_p. From there, similar to uniform hemisphere sampling we utilize the reflectance equation/monte carlo estimation. One important aspect to note is that for delta lights (point light source, all samples are the same) we sampled only once to avoid wasting time. For each light in the scene, we then iterated num samples times and followed the same monte carlo estimation/ray constrution method as uniform hemisphere sampling, but this time making sure to divide by the pdf parameter when computing the estimator for a given intersection. </p>
+        <p>Hemisphere:</p>
+        <img src = "./images/p3/bunny_hemisphere.jpeg"></img>
+        <p>Importance:</p>
+        <img src = "./images/p3/importance_bunny.png"></img>
+        
+        <h3 align = "left"> Noise Level Comparison in Soft Shadows </h3>
+        <p>Noise is higher especially in the soft shadows with fewer light rays per light source.</p>
+        <p>l = 1</p>
+        <img src = "./images/p3/bunny_1.png"></img>
+        <p>l = 4</p>
+        <img src = "./images/p3/bunny_4.png"></img>
+        <p>l = 16</p>
+        <img src = "./images/p3/bunny_16.png"></img>
+        <p>l = 64</p>
+        <img src = "./images/p3/bunny_64.png"></img>
+
+        <h3 align = "left"> Uniform Hemisphere Sampling vs. Lighting sampling </h3>
+        <p>The hemisphere sampling image looks more noisy than the lighting sampling image, possibly due to the importance sampling being more efficient in tracking the important angles rather than randomly distributed over the hemisphere. The walls of the hemisphere image seem to be noisy around the room as well. There seem to be random black dots for the hemisphere image, possibly because the rays sampled completely miss the light source.</p>
+        
+
+    <h2 align="middle">Part 4: Global Illumination </h2>
+        <h3 align = "left"> Indirect Lighting Function </h3>
+            <p>The indirect lighting function allows us to account for light that may bounce many times in an image. Unlike direct lighting which only accounts for zero and one bounce, we implement indirect lighting by adding zero bounce and at_least_one_bounce_radiance(). The difference between one bounce and at_least_one_bounce_radiance() is that in at_least_one_bounce_radiance() we check for incoming light from multiple bounces as well.
+                at_least_one_bounce_radiance() returns the estimated light incoming from the ray bouncing off the point. It recursively calls itself, each time adding one bounce to the ray and retrieving the radiance incoming. Each bounce, we use Russian roulette to terminate the ray probabilistically with p=0.3. We also terminate rays that reach the max ray depth to end recursion as well. Ultimately, this returns an estimate of incoming radiance that may have bounced a random number of times around the image.</p>
+        <h3 align = "left"> Renderings with Global Illumination (Direct & Indirect) </h3>
+        <img src = "./images/part4/global_bench.png"></img>
+        <img src = "./images/part4/global_bunny.png" ></img>
+        <img src = "./images/part4/global_spheres.png" ></img>
+        
+        <h3 align = "left"> Direct vs Indirect Illumination </h3>
+        <p>Direct: </p>
+        <img src = "./images/part4/direct_bunny.png"></img>
+        <p>Indirect: </p>
+        <img src = "./images/part4/indirect_bunny.png"></img>
+        
+        <h3 align = "left"> Max Ray Depth Renderings </h3>
+        <p>m = 0: </p>
+        <img src = "./images/part4/CBbunny_0.png"></img>
+        <p>m = 1: </p>
+        <img src = "./images/part4/CBbunny_1.png"></img>
+        <p>m = 2: </p>
+        <img src = "./images/part4/CBbunny_2.png"></img>
+        <p>m = 3: </p>
+        <img src = "./images/part4/CBbunny_3.png"></img>
+        <p>m = 100: </p>
+        <img src = "./images/part4/CBbunny_100.png"  ></img>
+        
+        <h3 align = "left"> Sample-Per-Pixel Rates </h3>
+        <p>m = 1: </p>
+        <img src = "./images/part4/dragon_1.png"  ></img>
+        <p>m = 2: </p>
+        <img src = "./images/part4/dragon_2.png"  ></img>
+        <p>m = 4: </p>
+        <img src = "./images/part4/dragon_4.png"  ></img>
+        <p>m = 8: </p>
+        <img src = "./images/part4/dragon_8.png"  ></img>
+        <p>m = 16: </p>
+        <img src = "./images/part4/dragon_16.png"  ></img>
+        <p>m = 64: </p>
+        <img src = "./images/part4/dragon_64.png"  ></img>
+        <p>m = 1024: </p>
+        <img src = "./images/part4/dragon_1024.png"  ></img>
+        
+
+    <h2 align="middle">Part 5: Adaptive Sampling </h2>
+        <h3 align = "left"> Implementation Walkthrough </h3>
+        <p> Adaptive sampling was implemented according to the general below steps. At a high level, the value of using adaptive sampling is to ensure that sufficient samples are used for more "difficult" parts of the image, or in other words pixels that take longer to converge and would otherwise end up noisy. For each pixel traced, we check the variable I (1.96 * SD / sqrt(n)) being <= a defined maxTolerance * mean of the samples traced through a pixel. If I exceeds our bound, then we make the assumption the pixel has converged and we stop tracing rays for the given pixel. We were able to do so by looping through  num_samples, computing a mean based on the samples so far (adding up the illumination per sample and dividing by number of samples so far) as well as a variance so far (in a separate variable, keep track of illum^2 and using the variance formula (1/n-1) * (s2 - (s1^2)/n). Once we have done so for all pixels, we update the pixel in the sample buffer with the sum of samples so far divided by the nyumber of samples, as well as the sampleCountBuffer by the number of samples. It's also important to note while looping through that we only check the termination condition/convergence every samplesPerBatch times.  
+
+        <h3 align = "left"> Adaptive Sampling Results </h3>
+        <p> Below results are shown using 2048 samples/pixel,  1 sample/light, and 5 max ray depth. Included is both the sample rate image as well as the noise-free rendering. </p>
+        <img src = "./images/p5/p5_noisefree.png" style="width:600px;height:450px;"></img>
+        <img src = "./images/p5/p5_rate.png" style="width:600px;height:450px;"></img>
+    
+</div>
+</body>
 </html>
+
+
+
+
