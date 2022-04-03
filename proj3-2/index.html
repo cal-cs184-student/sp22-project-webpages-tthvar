@@ -1,7 +1,154 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>  
+    div.padded {  
+      padding-top: 0px;  
+      padding-right: 100px;  
+      padding-bottom: 0.25in;  
+      padding-left: 100px;  
+    }  
+  </style> 
+<title>Howard Wang, Tejas Thvar  |  CS 184</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+</head>
+<body>
+<br />
+<h1 align="middle">Assignment 3: PathTracer</h1>
+    <h2 align="middle">Howard Wang, Tejas Thvar</h2>
+
+    <div class="padded">
+        <p>In this assignment, we rendered different materials, such as mirrors, glass, and metals.</p>
+        <o>In this project, we spent a lot of time struggling to build on our m1 laptops.
+            We also struggled with working with the hive.
+        </p> 
+        <p></p>
+
+    <h2 align="middle">Part 1: Mirror and Glass</h2>
+        <p>In part 1, we implemented reflection and refraction which allowed us to render 
+            mirrors and glass. In this case, we just used the implementation based on
+            the exact pseudocode in the spec, which worked out great for us.
+            We first implemented reflect by flipping the x and y values of the input (reflection on z normal).
+            We then implemented refraction by checking for total internal reflection,
+            and returning the equations on the spec if there was refraction.
+            The problem was that when we were working on refract, we kept rendering 
+            spheres.dae instead of spheres_refract.dae and were stuck on why our 
+            refract functions weren't being called.
+
+        </p>
+        <p>For the differences between images, see the captions. Each time, we
+            identified the the new multibounce effects that appear and why they showed up.
+        </p>
+        <p> 64 Samples/pixel, 4 samples/light </p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/p1/spheres0.png" width="480px" />
+                    <figcaption align="middle">-m = 0, only the direct light since it cannot bounce.</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p1/spheres1.png" width="480px" />
+                    <figcaption align="middle">-m = 1, we can see the light bounce off the spheres, which is a single bounce.</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p1/spheres2.png" width="480px" />
+                    <figcaption align="middle">-m = 2, we can see the light bouncing off the wall, then the mirror sphere on the left.</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p1/spheres3.png" width="480px" />
+                    <figcaption align="middle">-m = 3, now we have refraction, which takes 3 bounces (light -> sphere -> sphere -> camera).</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p1/spheres4.png" width="480px" />
+                    <figcaption align="middle">-m = 4, the refraction is reflected off the mirror sphere to the camera (one extra from before).</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p1/spheres5.png" width="480px" />
+                    <figcaption align="middle">-m = 5, similar but with more overall light.</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p1/spheres100.png" width="480px" />
+                    <figcaption align="middle">-m = 100, very high ray depth, so the image is much brighter all around.</figcaption>
+                </tr>
+            </table>
+        </div>
+
+        <h2 align="middle">Part 2: Microfacet Model</h2>
+        <h3 align = "middle"> Implementation Overview </h3>
+        <p> For the microfacet model implementation, we followed first the Fresnel coefficient method to determine the BRDF evaluation function, using the given input function as included below. </p>
+        <img src = "images/p2/fresnel.png"></img>
+        <p> We then computed the normal distribution function to define the normal distribution of the microfacets, specifically using the Beckmann distribution included below. </p>
+        <img src = "images/p2/beckmann.png"></img>
+        <p> We implemented the Fresnel air-conductor term using the approximation below. </p>
+        <img src = "images/p2/fresnel_air.png"></img>
+        <p> Finally we implemented importance sampling using the pair of pdfs as given, and the inversion method to integrate/invert them. We used a uniformly distributed pair of random numbers for sampling purposes as well, and finally derived the pdf for the Beckmann distribution samples as according to the below equation. </p>
+        <img src = "images/p2/pdf.png"></img>
+        <h3 align = "middle"> Roughness Surface Coefficient Modification </h3>
+        <p> Run using 128 sampling rate, 5 bounces, 1 light/sample. </p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/p2/CBdragon_au_0.5.png" width="480px" />
+                    <figcaption align="middle"> alpha = 0.5</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p2/CBdragon_au_0.25.png" width="480px" />
+                    <figcaption align="middle"> alpha = 0.25</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p2/CBdragon_au_0.05.png" width="480px" />
+                    <figcaption align="middle"> alpha = 0.05</figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p2/CBdragon_au_0.005.png" width="480px" />
+                    <figcaption align="middle"> alpha = 0.005</figcaption>
+                </tr>
+            </table>
+            <p> We can see that as the alpha value decreases, the luster of the material increases and it seems more reflective. We can also so increased noise throughout the image in the form of white dots, although interestingly less so with the lowest alpha of 0.005. We can also see that the dragon’s borders seems more defined with the lower alpha value but more “blurred”/soft with the higher alpha values. As stated in the spec, as alpha represents the roughness of the macro surface, a smaller alpha corresponds to a more glossy / smooth / lustrous surface. </p>
+        </div>
+
+        <h3 align = "middle"> Cosine Hemisphere Sampling vs. Importance Sampling</h3>
+        <p> Run using 64 sampling rate, 5 bounces, 1 light/sample. </p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/p2/CBbunny_cu_cos.png" width="480px" />
+                    <figcaption align="middle"> Cosine Hemisphere Sampling </figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                    <img src="images/p2/CBbunny_cu_imp.png" width="480px" />
+                    <figcaption align="middle"> Importance Sampling </figcaption>
+                </tr>
+            </table>
+            <p>  We can see that the image rendered using the importance sampling method implemented results in much more gloss, more colors rendered due to better sampling (see the copper reflective color), and overall a much better rendering than cosine hemisphere sampling. We can also see more white noise in the hemisphere sampling rendered image. </p>
+        </div>
+
+        <h3 align = "middle"> Custom Material </h3>
+        <p> Run using 128 sampling rate, 5 bounces, 4 lights/sample. </p>
+        <img src="images/p2/CBbunny_pb.png" width="480px" />
+        <p> For this image, we looked up the n and k coefficients at the given wavelengths to modify the dae file for the bunny. We chose to render the bunny as a lead bunny. Coefficients as given below using an online database (run with alpha of 0.25): 614 nm: n = 1.0132 + k = 6.2285, 549 nm: n = 0.65850, k = 5.6248, 466 nm: n = 0.42092, k = 4.6673. </p>
+
+        <p> We worked together by first helping each other get set up, 
+            since we had a lot of trouble with the build not working on our m1 laptops.
+            Then we decided to work in parallel when we could on part 1 and part 2.
+            We work still work together on Zoom to help each other fix mistakes and review code for bugs when we got stuck. We learned the power of pair programming, independent work, and constant communication as well as conceptually how to render different materials including glass and metals/microfacets. </p>
+</body>
 </html>
+
+
+
+
